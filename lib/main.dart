@@ -62,6 +62,14 @@ class _DashboardPageState extends State<DashboardPage> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    m.message,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
                 if (wide)
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Expanded(child: Column(children: _spaced(left))),
@@ -70,8 +78,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   ])
                 else
                   ..._spaced([...left, ...right]),
-                const SizedBox(height: 12),
-                Text(m.message, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
               ],
             );
           }),
