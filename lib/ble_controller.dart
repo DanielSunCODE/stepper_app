@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
@@ -57,7 +56,10 @@ class MotorController extends ChangeNotifier {
   double get millivolts => adc / 4095 * 3300 * dividerFactor;
   bool get moving => direction != 0;
 
-  bool get _isMobile => Platform.isAndroid || Platform.isIOS;
+  /// `dart:io` no existe en web, así que se usa la plataforma de Flutter.
+  bool get _isAndroid => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  bool get _isMobile =>
+      !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
 
   // ------------------------------------------------------------ conexión
   Future<void> connect() async {
@@ -122,7 +124,7 @@ class MotorController extends ChangeNotifier {
     final stat = QualifiedCharacteristic(serviceId: _service, characteristicId: _status, deviceId: id);
     try {
       // Pide más MTU y da tiempo al ESP32 para registrar las notificaciones.
-      if (Platform.isAndroid) await _ble.requestMtu(deviceId: id, mtu: 64);
+      if (_isAndroid) await _ble.requestMtu(deviceId: id, mtu: 64);
     } catch (_) {}
     _teleSub = _ble.subscribeToCharacteristic(tele).listen(_onTelemetry);
     _statusSub = _ble
@@ -150,7 +152,7 @@ class MotorController extends ChangeNotifier {
   }
 
   Future<bool> _ensurePermissions() async {
-    if (!Platform.isAndroid) return true;
+    if (!_isAndroid) return true;
     final res = await [
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
