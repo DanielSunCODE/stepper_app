@@ -57,6 +57,8 @@ class MotorController extends ChangeNotifier {
   double get millivolts => adc / 4095 * 3300 * dividerFactor;
   bool get moving => direction != 0;
 
+  bool get _isMobile => Platform.isAndroid || Platform.isIOS;
+
   // ------------------------------------------------------------ conexión
   Future<void> connect() async {
     if (link != Link.disconnected) return;
@@ -64,6 +66,7 @@ class MotorController extends ChangeNotifier {
       _setMessage('Faltan permisos de Bluetooth.');
       return;
     }
+    if (!await _ensureBluetoothOn()) return;
     final seen = <String>{};
     link = Link.scanning;
     _setMessage('Buscando MotorPasos-ESP32...');
@@ -157,6 +160,35 @@ class MotorController extends ChangeNotifier {
     // En Android <= 11 estos devuelven "denied/restricted" aunque el escaneo funcione
     // con la ubicación; solo bloqueamos si el usuario los negó de forma permanente.
     return !(scan.isPermanentlyDenied || conn.isPermanentlyDenied);
+  }
+
+  /// Comprueba que el adaptador BLE esté encendido antes de intentar escanear.
+  Future<bool> _ensureBluetoothOn() async {
+    if (!_isMobile) return true;
+    try {
+      await _ble.initialize();
+      final status = await _ble.statusStream
+          .first
+          .timeout(const Duration(seconds: 3), onTimeout: () => _ble.status);
+      switch (status) {
+        case BleStatus.ready:
+          return true;
+        case BleStatus.poweredOff:
+          _setMessage('El Bluetooth está apagado. Actívalo y vuelve a pulsar Conectar.');
+        case BleStatus.unauthorized:
+          _setMessage('Autoriza el Bluetooth para esta aplicación.');
+        case BleStatus.locationServicesDisabled:
+          _setMessage('Activa los servicios de ubicación para poder escanear.');
+        case BleStatus.unsupported:
+          _setMessage('Este dispositivo no soporta Bluetooth LE.');
+        case BleStatus.unknown:
+          _setMessage('No se pudo comprobar el estado del Bluetooth.');
+      }
+      return false;
+    } catch (e) {
+      _setMessage('No se pudo iniciar el Bluetooth: $e');
+      return false;
+    }
   }
 
   // ------------------------------------------------------------ telemetría
