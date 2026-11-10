@@ -10,7 +10,7 @@ final _service = Uuid.parse('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
 final _command = Uuid.parse('beb5483e-36e1-4688-b7f5-ea07361b26a8');
 final _status = Uuid.parse('6e400003-b5a3-f393-e0a9-e50e24dcca9e');
 final _telemetry = Uuid.parse('6e400004-b5a3-f393-e0a9-e50e24dcca9e');
-const _devicePrefix = 'MotorPasos';
+const _devicePrefix = 'MOTORPASOS';
 
 /// Tipo de movimiento del motor (índice = número que espera el firmware: M0/M1/M2).
 enum StepMode {
@@ -84,7 +84,8 @@ class MotorController extends ChangeNotifier {
     _scanSub = _ble.scanForDevices(withServices: const []).listen((d) {
       if (link != Link.scanning) return;
       if (seen.add(d.id)) _setMessage('Buscando MotorPasos-ESP32... (${seen.length} dispositivos vistos)');
-      final isOurs = d.name.startsWith(_devicePrefix) || d.serviceUuids.contains(_service);
+      // Algunos celulares entregan el nombre en mayúsculas (MOTORPASOS-ESP32).
+      final isOurs = d.name.toUpperCase().contains(_devicePrefix) || d.serviceUuids.contains(_service);
       if (!isOurs) return;
       timeout.cancel();
       _scanSub?.cancel();
